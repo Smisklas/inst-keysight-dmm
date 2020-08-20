@@ -17,7 +17,7 @@ def main():
     dmm.conf_volt(acdc,range,resolution)
     dmm.set_trigger(dmm_samples)
     cycle = 0
-    log_file = 'dmm_log.csv'
+    log_file = '../dmm_log.csv'
 
     if path.exists(log_file):
         pass

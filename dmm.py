@@ -1,30 +1,36 @@
-import visa
+from VISAInstrument import VISAInstrument
 from time import sleep
 
-class DMM(object):
+class DMM(VISAInstrument):
     def __init__(self, TCPIP):
-        #The session will be contained within the self.session object, the other methods
-        #facilitates the communication with the DMM in a more compact manner.
+        super().__init__(TCPIP)
 
-        #VISA_ADDRESS = 'USB0::10893::5633::MY59018505::0::INSTR' #USB type adress
-        self.VISA_ADDRESS = 'TCPIP::{}::5025::SOCKET'.format(TCPIP)
-        try:
-            self.resourceManager = visa.ResourceManager()
-            self.session = self.resourceManager.open_resource(self.VISA_ADDRESS)
-            self.session.read_termination = '\n' #termination for TCP/IP
 
-            #SERIAL SETTINGS ******* NOT USED FOR TCPIP
-            #self.session.set_visa_attribute(visa.constants.VI_ATTR_ASRL_BAUD, 9600)
-            #self.session.set_visa_attribute(visa.constants.VI_ATTR_ASRL_DATA_BITS, 8)
-            #self.session.set_visa_attribute(visa.constants.VI_ATTR_ASRL_PARITY, visa.constants.VI_ASRL_PAR_NONE)
-            #self.session.set_visa_attribute(visa.constants.VI_ATTR_ASRL_FLOW_CNTRL, visa.constants.VI_ASRL_FLOW_DTR_DSR)
-            self.session.timeout=None #No timeout, just to acommocade for long measurements. (might cause errors....)
-        except visa.Error as ex:
-            print("Couldn't connect to '{}', exiting now...".format(VISA_ADDRESS))
+    @property
+    def configuration(self):
+        return self.do_query_string('CONF?')
 
-    def get_id(self):
-        self.session.write('*IDN?')
-        return self.session.read()
+     @configuration.setter
+     def configuration(self, command):
+         self.do_command(command)
+
+    @property
+    def function(self):
+        #voltage range of the dmm
+        return self.__function
+
+    @voltage_range.setter
+    def voltage_range(self, voltageRange):
+        self.__voltage_range = voltageRange
+
+    @property
+    def trigger(self):
+        return 0
+
+    @property
+    def data(self):
+        return self.do_query_string('DATA:LAST?')
+
 
     def conf_volt(self, acdc, range, resolution):
         write_string = 'CON:VOLT:{} {},{}'.format(acdc, range, resolution)
@@ -46,7 +52,7 @@ class DMM(object):
         data = self.session.read()
         data = data.strip('\n').split(',')
         data = [float(x) for x in data]
-        
+
         return data
 
     def clear_data(self):
