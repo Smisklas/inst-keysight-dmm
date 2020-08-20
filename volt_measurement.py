@@ -12,7 +12,7 @@ def main():
     time_format = '%Y%m%d_%H%M%S'
     #configure dmm
     acdc = 'DC'
-    range = '100'
+    dmm_range = '100'
     resolution = 0.01
     dmm.conf_volt(acdc,range,resolution)
     dmm.set_trigger(dmm_samples)
@@ -24,7 +24,7 @@ def main():
 
     else:
 
-        with open('dmm_log.csv','w') as f:
+        with open(log_file,'w') as f:
             write_string = 'Date;'+';'.join(['data'+str(x) for x in range(dmm_samples)])
             f.write(write_string+'\n')
 
@@ -38,11 +38,11 @@ def main():
             dmm_data = ';'.join([str(v) for v in volt])
             write_line = time+';'+dmm_data
 
-            with open(loggFile,'a') as f:
+            with open(log_file,'a') as f:
                 f.write(write_line+'\n')
 
-            print('Just finnished cycle {}, sleeping'.format(cycle))
-            time.sleep(10)
+            print('{} V'.format(volt[0]))
+            time.sleep(1)
     except KeyboardInterrupt:
         print('Experiment finnished.')
 
