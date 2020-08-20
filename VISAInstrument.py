@@ -30,6 +30,12 @@ class VISAInstrument(object):
         self.session.write('*IDN?')
         return self.session.read()
 
+
+    def close(self):
+        self.session.close()
+        self.resourceManager.close()
+        print('Connection closed...')
+
     def do_command(self, cmd, hide_params=False):
         if hide_params:
             (header, data) = cmd.split(' ',1)
@@ -72,3 +78,20 @@ class VISAInstrument(object):
         result = self.session.query_binary_values(query, datatype='s')
         self.check_instrument_errors(query)
         return result[0]
+
+    def check_instrument_errors(self, cmd):
+
+        while True:
+            error_string = self.session.query(":SYSTem:ERRor? STRing")
+            if error_string: # If there is an error string value
+                if error_string.find('0,',0,2) == -1:
+                    print('ERROR: {}, command: {}'.format(error_string, cmd))
+                    print('Exited because of error.')
+                    sys.exit(1)
+                else:
+                    break
+
+            else:
+                print('ERROR: :SYSTem:ERRor? STRing returned nothing, command: {}'.format(cmd))
+                print('Exited because of error.')
+                sys.exit(1)
