@@ -10,9 +10,9 @@ class DMM(VISAInstrument):
     def configuration(self):
         return self.do_query_string('CONF?')
 
-     @configuration.setter
-     def configuration(self, command):
-         self.do_command(command)
+    @configuration.setter
+    def configuration(self, command):
+        self.do_command(command)
 
     @property
     def function(self):
@@ -24,11 +24,19 @@ class DMM(VISAInstrument):
         self.__voltage_range = voltageRange
 
     @property
+    def samples(self):
+        return do_query_number('SAMPle:COUNt?')
+
+    @samples.setter
+    def samples(self, num_samples):
+        self.do_command('SAMPLe:COUNt {}'.format(num_samples))
+
+    @property
     def trigger(self):
         return 0
 
     @property
-    def data(self):
+    def value(self):
         return self.do_query_string('DATA:LAST?')
 
 
