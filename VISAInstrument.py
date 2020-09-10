@@ -1,5 +1,6 @@
 import visa
 from time import sleep
+import sys
 
 
 
@@ -11,7 +12,7 @@ class VISAInstrument(object):
         #facilitates the communication with the DMM in a more compact manner.
 
         #VISA_ADDRESS = 'USB0::10893::5633::MY59018505::0::INSTR' #USB type adress
-        SLEEP_TIME = 0.10 #Waits after each command to the instrument
+        self.SLEEP_TIME = 0.10 #Waits after each command to the instrument
         self.VISA_ADDRESS = 'TCPIP::{}::5025::SOCKET'.format(TCPIP)
         try:
             self.resourceManager = visa.ResourceManager()
@@ -30,7 +31,12 @@ class VISAInstrument(object):
     @property
     def identity(self):
         self.session.write('*IDN?')
-        sleep(SLEEP_TIME)
+        sleep(self.SLEEP_TIME)
+        return self.session.read()
+
+    def query(self, cmd):
+        self.session.write(cmd)
+        sleep(self.SLEEP_TIME)
         return self.session.read()
 
 
@@ -49,7 +55,7 @@ class VISAInstrument(object):
                 print('\nCmd = {}'.format(cmd))
 
         self.session.write(cmd)
-        sleep(SLEEP_TIME)
+        sleep(self.SLEEP_TIME)
         if hide_params:
             self.check_instrument_errors(header)
         else:
@@ -59,20 +65,20 @@ class VISAInstrument(object):
         if self.debug:
             print('Cmd = {}'.format(cmd))
         self.session.write_binary_values(cmd+' ', values, datatype='B')
-        sleep(SLEEP_TIME)
+        sleep(self.SLEEP_TIME)
         self.check_instrument_errors(cmd)
 
     def do_query_string(self, query):
         if self.debug:
             print('Qys = {}'.format(query))
-        result = self.session.query(query)
+        result = self.query(query)
         self.check_instrument_errors(query)
         return result
 
     def do_query_number(self, query):
         if self.debug:
             print("Qyn = {}". format(query))
-        results = self.session.query(query)
+        results = self.query(query)
         self.check_instrument_errors(query)
         return float(results)
 
@@ -86,7 +92,7 @@ class VISAInstrument(object):
     def check_instrument_errors(self, cmd):
 
         while True:
-            error_string = self.session.query(":SYSTem:ERRor? STRing")
+            error_string = self.query(":SYSTem:ERRor? STRing")
             if error_string: # If there is an error string value
                 if error_string.find('0,',0,2) == -1:
                     print('ERROR: {}, command: {}'.format(error_string, cmd))

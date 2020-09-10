@@ -7,47 +7,54 @@ class DMM(VISAInstrument):
 
 
     @property
-    def configuration(self):
-        return self.do_query_string('CONF?')
-
-    @configuration.setter
-    def configuration(self, command):
-        self.do_command(command)
-
-    @property
-    def function(self):
-        #voltage range of the dmm
-        return self.__function
-
-    @voltage_range.setter
-    def voltage_range(self, voltageRange):
-        self.__voltage_range = voltageRange
-
-    @property
-    def samples(self):
-        return do_query_number('SAMPle:COUNt?')
-
-    @samples.setter
-    def samples(self, num_samples):
-        self.do_command('SAMPLe:COUNt {}'.format(num_samples))
-
-    @property
-    def trigger(self):
-        return 0
-
-    @property
     def value(self):
-        return self.do_query_string('DATA:LAST?')
+        return self.query('DATA:LAST?')
 
+    def do_command(self, cmd, debug = False):
+        self.session.write(cmd)
+        sleep(self.SLEEP_TIME)
+        if debug:
+            self.check_instrument_errors()
+
+    def do_query_number(self, query):
+        if self.debug:
+            print("Qyn = {}". format(query))
+        results = self.query(query)
+        self.check_instrument_errors()
+        return float(results)
+
+    def check_instrument_errors(self):
+
+        while True:
+            code, msg = self.query('SYST:ERR?').split(',')
+            if int(code) == 0:
+                break
+            print('ERROR: {} ==> {}'.format(code, msg))
+
+
+
+    def capture_data(self, samples, sampleRate):
+        #capture a block of data
+        sampleInterval = 1/sampleRate
+        self.do_command('SAMPle:COUNt {}'.format(samples))
+        #self.do_command('SAMPle:TIMer {}'.format(sampleInterval))
+        self.do_command('INIT')
+        self.do_command('*TRG')
+        print('Measuring voltage...')
+        sleep(samples*0.02)
+
+        data = self.query('FETCH?')
+        data = data.split(',')
+        data = [float(value) for value in data]
+        self.data = data
 
     def conf_volt(self, acdc, range, resolution):
-        write_string = 'CON:VOLT:{} {},{}'.format(acdc, range, resolution)
-        self.session.write(write_string)
+        write_string = 'CONF:VOLT:{} {},{}'.format(acdc, range, resolution)
+        self.do_command(write_string)
 
-    def set_trigger(self, samples):
-        self.samples = samples
-        write_string = 'SAMP:COUN {};TRIG: SOUR BUS;INIT'.format(samples)
-        self.session.write(write_string)
+    def set_trigger(self, trigger_type):
+        write_string = 'TRIG:SOUR {}'.format(trigger_type)
+        self.do_command(write_string)
 
     def fetch_data(self):
         write_string = '*TRG;FETCH?'
